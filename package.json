@@ -7,14 +7,16 @@
   },
   "author": "ChilliCream",
   "license": "MIT",
+  "type": "module",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "ncc build src/index.js --source-map"
+    "build": "tsc"
   },
   "devDependencies": {
-    "@vercel/ncc": "^0.38.4"
+    "@types/node": "^25.3.0",
+    "typescript": "^5.9.3"
   },
-  "packageManager": "yarn@4.2.2",
   "peerDependencies": {
     "@actions/core": "^3.0.0",
     "@actions/exec": "^3.0.0",
