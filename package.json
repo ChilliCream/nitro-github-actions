@@ -1,0 +1,24 @@
+{
+  "name": "@chillicream/nitro-github-actions",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChilliCream/nitro-github-actions.git"
+  },
+  "author": "ChilliCream",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "ncc build src/index.js --source-map"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.38.4"
+  },
+  "packageManager": "yarn@4.2.2",
+  "peerDependencies": {
+    "@actions/core": "^3.0.0",
+    "@actions/exec": "^3.0.0",
+    "@actions/github": "^9.0.0",
+    "@actions/tool-cache": "^4.0.0"
+  }
+}
