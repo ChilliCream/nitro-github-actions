@@ -160,6 +160,49 @@ async function upsertComment(id: string, markdown: string) {
   }
 }
 
+export async function removeComment(id: string) {
+  if (!id.trim()) {
+    throw new Error("Comment id must not be empty.");
+  }
+
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    throw new Error(
+      "GITHUB_TOKEN is required to remove pull request comments.",
+    );
+  }
+
+  const pullRequestNumber = github.context.payload.pull_request?.number;
+
+  if (!pullRequestNumber) {
+    throw new Error("removeComment can only be used in pull_request contexts.");
+  }
+
+  const octokit = github.getOctokit(token);
+  const { owner, repo } = github.context.repo;
+  const marker = `<!-- nitro-comment:${encodeURIComponent(id)} -->`;
+
+  const comments = await octokit.paginate(octokit.rest.issues.listComments, {
+    owner,
+    repo,
+    issue_number: pullRequestNumber,
+    per_page: 100,
+  });
+
+  const matchingComments = comments.filter((comment) =>
+    comment.body?.includes(marker),
+  );
+
+  for (const comment of matchingComments) {
+    await octokit.rest.issues.deleteComment({
+      owner,
+      repo,
+      comment_id: comment.id,
+    });
+  }
+}
+
 async function upsertReview(
   id: string,
   markdown: string,
