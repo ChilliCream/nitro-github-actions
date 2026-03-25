@@ -41,37 +41,30 @@ function getPlatformInfo() {
 }
 
 export async function installNitro(version: string) {
-  try {
-    const { osType, archType } = getPlatformInfo();
+  const { osType, archType } = getPlatformInfo();
 
-    const binaryName = osType === "win" ? "nitro.exe" : "nitro";
-    const toolName = "nitro";
+  const binaryName = osType === "win" ? "nitro.exe" : "nitro";
+  const toolName = "nitro";
 
-    let toolPath = tc.find(toolName, version);
+  let toolPath = tc.find(toolName, version);
 
-    if (!toolPath) {
-      const downloadUrl = `https://github.com/ChilliCream/graphql-platform/releases/download/${version}/nitro-${osType}-${archType}.zip`;
+  if (!toolPath) {
+    const downloadUrl = `https://github.com/ChilliCream/graphql-platform/releases/download/${version}/nitro-${osType}-${archType}.zip`;
 
-      core.info(`Downloading Nitro CLI from: ${downloadUrl}`);
+    core.info(`Downloading Nitro CLI from: ${downloadUrl}`);
 
-      const downloadPath = await tc.downloadTool(downloadUrl);
+    const downloadPath = await tc.downloadTool(downloadUrl);
 
-      const extractPath = await tc.extractZip(downloadPath);
+    const extractPath = await tc.extractZip(downloadPath);
 
-      toolPath = await tc.cacheDir(extractPath, toolName, version);
-    }
+    toolPath = await tc.cacheDir(extractPath, toolName, version);
+  }
 
-    core.addPath(toolPath);
+  core.addPath(toolPath);
 
-    if (osType !== "win") {
-      const binaryPath = path.join(toolPath, binaryName);
-      await exec.exec("chmod", ["+x", binaryPath]);
-    }
-  } catch (error) {
-    core.setFailed(
-      `Failed to install Nitro CLI: ${error instanceof Error ? error.message : String(error)}`,
-    );
-    throw error;
+  if (osType !== "win") {
+    const binaryPath = path.join(toolPath, binaryName);
+    await exec.exec("chmod", ["+x", binaryPath]);
   }
 }
 
