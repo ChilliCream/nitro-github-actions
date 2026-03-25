@@ -97,7 +97,6 @@ export async function installNitro(version: Version = "latest") {
   }
 }
 
-// TODO: default: ${{ job.check_run_id }}
 export function getSourceMetadata(jobId?: string) {
   const { context } = github;
 
