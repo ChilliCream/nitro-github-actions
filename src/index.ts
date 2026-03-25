@@ -5,8 +5,6 @@ import * as tc from "@actions/tool-cache";
 import * as path from "path";
 import * as os from "os";
 
-type Version = "latest" | string;
-
 function getPlatformInfo() {
   const platform = os.platform();
   const arch = os.arch();
@@ -42,37 +40,17 @@ function getPlatformInfo() {
   return { osType, archType };
 }
 
-async function getReleaseVersion(version: Version) {
-  // TODO: This is bad, if we publish a patch for a previous major version...
-  if (version === "latest") {
-    const latestUrl =
-      "https://api.github.com/repos/ChilliCream/graphql-platform/releases/latest";
-    const response = await exec.getExecOutput("curl", ["-s", latestUrl]);
-    const release = JSON.parse(response.stdout);
-    const tag_name = release?.tag_name;
-
-    if (typeof tag_name !== "string") {
-      throw new Error("Failed to fetch latest release version");
-    }
-
-    return tag_name;
-  }
-
-  return version;
-}
-
-export async function installNitro(version: Version = "latest") {
+export async function installNitro(version: string) {
   try {
     const { osType, archType } = getPlatformInfo();
-    const resolvedVersion = await getReleaseVersion(version);
 
     const binaryName = osType === "win" ? "nitro.exe" : "nitro";
     const toolName = "nitro";
 
-    let toolPath = tc.find(toolName, resolvedVersion);
+    let toolPath = tc.find(toolName, version);
 
     if (!toolPath) {
-      const downloadUrl = `https://github.com/ChilliCream/graphql-platform/releases/download/${resolvedVersion}/nitro-${osType}-${archType}.zip`;
+      const downloadUrl = `https://github.com/ChilliCream/graphql-platform/releases/download/${version}/nitro-${osType}-${archType}.zip`;
 
       core.info(`Downloading Nitro CLI from: ${downloadUrl}`);
 
@@ -80,7 +58,7 @@ export async function installNitro(version: Version = "latest") {
 
       const extractPath = await tc.extractZip(downloadPath);
 
-      toolPath = await tc.cacheDir(extractPath, toolName, resolvedVersion);
+      toolPath = await tc.cacheDir(extractPath, toolName, version);
     }
 
     core.addPath(toolPath);
