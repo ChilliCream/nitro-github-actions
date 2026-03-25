@@ -83,3 +83,62 @@ export function getSourceMetadata(jobId?: string) {
     repositoryUrl,
   };
 }
+
+export async function upsertComment(
+  id: string,
+  markdown: string,
+): Promise<void> {
+  if (!id.trim()) {
+    throw new Error("Comment id must not be empty.");
+  }
+
+  if (!markdown.trim()) {
+    throw new Error("Comment markdown must not be empty.");
+  }
+
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    throw new Error(
+      "GITHUB_TOKEN is required to upsert pull request comments.",
+    );
+  }
+
+  const pullRequestNumber = github.context.payload.pull_request?.number;
+
+  if (!pullRequestNumber) {
+    throw new Error("upsertComment can only be used in pull_request contexts.");
+  }
+
+  const octokit = github.getOctokit(token);
+  const { owner, repo } = github.context.repo;
+  const marker = `<!-- nitro-comment:${encodeURIComponent(id)} -->`;
+  const body = `${marker}\n${markdown}`;
+
+  const comments = await octokit.paginate(octokit.rest.issues.listComments, {
+    owner,
+    repo,
+    issue_number: pullRequestNumber,
+    per_page: 100,
+  });
+
+  const existingComment = comments.find((comment) =>
+    comment.body?.includes(marker),
+  );
+
+  if (existingComment) {
+    await octokit.rest.issues.updateComment({
+      owner,
+      repo,
+      comment_id: existingComment.id,
+      body,
+    });
+  } else {
+    await octokit.rest.issues.createComment({
+      owner,
+      repo,
+      issue_number: pullRequestNumber,
+      body,
+    });
+  }
+}
