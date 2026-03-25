@@ -84,10 +84,7 @@ export function getSourceMetadata(jobId?: string) {
   };
 }
 
-export async function upsertComment(
-  id: string,
-  markdown: string,
-): Promise<void> {
+export async function upsertComment(id: string, markdown: string) {
   if (!id.trim()) {
     throw new Error("Comment id must not be empty.");
   }
@@ -139,6 +136,62 @@ export async function upsertComment(
       repo,
       issue_number: pullRequestNumber,
       body,
+    });
+  }
+}
+
+export async function upsertReview(id: string, markdown: string) {
+  if (!id.trim()) {
+    throw new Error("Review id must not be empty.");
+  }
+
+  if (!markdown.trim()) {
+    throw new Error("Review markdown must not be empty.");
+  }
+
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    throw new Error("GITHUB_TOKEN is required to upsert pull request reviews.");
+  }
+
+  const pullRequestNumber = github.context.payload.pull_request?.number;
+
+  if (!pullRequestNumber) {
+    throw new Error("upsertReview can only be used in pull_request contexts.");
+  }
+
+  const octokit = github.getOctokit(token);
+  const { owner, repo } = github.context.repo;
+  const marker = `<!-- nitro-review:${encodeURIComponent(id)} -->`;
+  const body = `${marker}\n${markdown}`;
+
+  const reviews = await octokit.paginate(octokit.rest.pulls.listReviews, {
+    owner,
+    repo,
+    pull_number: pullRequestNumber,
+    per_page: 100,
+  });
+
+  const existingReview = reviews.find((review) =>
+    review.body?.includes(marker),
+  );
+
+  if (existingReview && existingReview.state === "CHANGES_REQUESTED") {
+    await octokit.rest.pulls.updateReview({
+      owner,
+      repo,
+      pull_number: pullRequestNumber,
+      review_id: existingReview.id,
+      body,
+    });
+  } else {
+    await octokit.rest.pulls.createReview({
+      owner,
+      repo,
+      pull_number: pullRequestNumber,
+      body,
+      event: "REQUEST_CHANGES",
     });
   }
 }
