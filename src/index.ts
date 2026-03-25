@@ -97,17 +97,19 @@ export async function installNitro(version: Version = "latest") {
   }
 }
 
-export function getSourceMetadata() {
+// TODO: default: ${{ job.check_run_id }}
+export function getSourceMetadata(jobId?: string) {
   const { context } = github;
 
-  const commitSha = context.sha;
   const repositoryUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}`;
-  const actor = context.actor;
 
-  let pipelineUrl = `${repositoryUrl}/actions/runs/${context.runId}`;
-  if (context.runAttempt > 0) {
-    pipelineUrl += `/attempts/${context.runAttempt}`;
-  }
-
-  return { commitSha, actor, repositoryUrl, pipelineUrl };
+  return {
+    actor: context.actor,
+    commitHash: context.sha,
+    workflowName: context.workflow,
+    runNumber: context.runNumber,
+    runId: context.runId,
+    jobId,
+    repositoryUrl,
+  };
 }
