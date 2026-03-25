@@ -160,7 +160,11 @@ async function upsertComment(id: string, markdown: string) {
   }
 }
 
-async function upsertReview(id: string, markdown: string) {
+async function upsertReview(
+  id: string,
+  markdown: string,
+  eventType: "COMMENT" | "REQUEST_CHANGES",
+) {
   if (!id.trim()) {
     throw new Error("Review id must not be empty.");
   }
@@ -211,20 +215,29 @@ async function upsertReview(id: string, markdown: string) {
       repo,
       pull_number: pullRequestNumber,
       body,
-      event: "REQUEST_CHANGES",
+      event: eventType,
     });
   }
 }
 
 export async function upsertPullRequestReviewComment(
+  /** A unique identifier for the comment */
   id: string,
+  /** The markdown content of the comment */
   markdown: string,
-  commentMode: Exclude<CommentMode, "none">,
+  /** The mode of the comment, either "comment" or "review" */
+  commentMode: Exclude<CommentMode, "none"> = "review",
+  /** Whether the comment has validation errors - if true, a review will request changes */
+  hasValidationErrors: boolean = false,
 ) {
   if (commentMode === "comment") {
     await upsertComment(id, markdown);
   } else if (commentMode === "review") {
-    await upsertReview(id, markdown);
+    await upsertReview(
+      id,
+      markdown,
+      hasValidationErrors ? "REQUEST_CHANGES" : "COMMENT",
+    );
   } else {
     throw new Error(
       `Invalid commentMode "${commentMode}". Expected one of: comment, review.`,
