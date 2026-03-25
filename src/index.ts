@@ -8,7 +8,7 @@ import * as os from "os";
 export type CommentMode = "comment" | "review" | "none";
 
 export function getCommentMode(): CommentMode {
-  const commentMode = (core.getInput("commentMode") || "none")
+  const commentMode = (core.getInput("comment-mode") || "none")
     .trim()
     .toLowerCase();
 
@@ -21,7 +21,7 @@ export function getCommentMode(): CommentMode {
   }
 
   throw new Error(
-    `Invalid commentMode "${commentMode}". Expected one of: comment, review, none.`,
+    `Invalid comment-mode "${commentMode}". Expected one of: comment, review, none.`,
   );
 }
 
@@ -240,7 +240,7 @@ export async function upsertPullRequestReviewComment(
     );
   } else {
     throw new Error(
-      `Invalid commentMode "${commentMode}". Expected one of: comment, review.`,
+      `Invalid comment-mode "${commentMode}". Expected one of: comment, review.`,
     );
   }
 }
