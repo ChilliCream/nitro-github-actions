@@ -5,6 +5,26 @@ import * as tc from "@actions/tool-cache";
 import * as path from "path";
 import * as os from "os";
 
+export type CommentMode = "comment" | "review" | "none";
+
+export function getCommentMode(): CommentMode {
+  const commentMode = (core.getInput("commentMode") || "none")
+    .trim()
+    .toLowerCase();
+
+  if (
+    commentMode === "comment" ||
+    commentMode === "review" ||
+    commentMode === "none"
+  ) {
+    return commentMode;
+  }
+
+  throw new Error(
+    `Invalid commentMode "${commentMode}". Expected one of: comment, review, none.`,
+  );
+}
+
 function getPlatformInfo() {
   const platform = os.platform();
   const arch = os.arch();
@@ -84,7 +104,7 @@ export function getSourceMetadata(jobId?: string) {
   };
 }
 
-export async function upsertComment(id: string, markdown: string) {
+async function upsertComment(id: string, markdown: string) {
   if (!id.trim()) {
     throw new Error("Comment id must not be empty.");
   }
@@ -140,7 +160,7 @@ export async function upsertComment(id: string, markdown: string) {
   }
 }
 
-export async function upsertReview(id: string, markdown: string) {
+async function upsertReview(id: string, markdown: string) {
   if (!id.trim()) {
     throw new Error("Review id must not be empty.");
   }
@@ -193,5 +213,21 @@ export async function upsertReview(id: string, markdown: string) {
       body,
       event: "REQUEST_CHANGES",
     });
+  }
+}
+
+export async function upsertPullRequestReviewComment(
+  id: string,
+  markdown: string,
+  commentMode: Exclude<CommentMode, "none">,
+) {
+  if (commentMode === "comment") {
+    await upsertComment(id, markdown);
+  } else if (commentMode === "review") {
+    await upsertReview(id, markdown);
+  } else {
+    throw new Error(
+      `Invalid commentMode "${commentMode}". Expected one of: comment, review.`,
+    );
   }
 }
