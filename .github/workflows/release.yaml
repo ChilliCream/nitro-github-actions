@@ -20,6 +20,12 @@ jobs:
       - name: 📦 Checkout
         uses: actions/checkout@v6
 
+      - name: 🧰 Enable Corepack
+        run: |
+          corepack enable
+          corepack prepare yarn@4.2.2 --activate
+          yarn --version
+
       - name: 🧰 Setup Node
         uses: actions/setup-node@v6
         with:
@@ -31,14 +37,11 @@ jobs:
       - name: 🏷 Get the version from tag
         run: echo "GIT_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
-      - name: 🧰 Enable Corepack
-        run: corepack enable
-
       - name: 🔍 Install dependencies
         run: yarn install --immutable
 
       - name: 🏷️ Set version
-        run: npm version $GIT_TAG
+        run: npm version $GIT_TAG --no-git-tag-version
 
       - name: 📦 Create tarball
         run: npm pack
