@@ -29,7 +29,7 @@ jobs:
       - name: 🧰 Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           scope: "@chillicream"
           cache: yarn
           cache-dependency-path: yarn.lock
@@ -39,6 +39,12 @@ jobs:
 
       - name: 🔍 Install dependencies
         run: yarn install --immutable
+
+      - name: 🧰 Install npm@11.9.0
+        run: npm install -g npm@11.9.0
+
+      - name: 🏗️ Build package
+        run: yarn build
 
       - name: 🏷️ Set version
         run: npm version $GIT_TAG --no-git-tag-version
@@ -50,11 +56,11 @@ jobs:
         run: |
           TARBALL="chillicream-nitro-github-actions-${GIT_TAG}.tgz"
 
-          npm publish "./${TARBALL}" --access public --tag "latest"
+          npm publish "./${TARBALL}" --access public --tag "latest" --provenance
         shell: bash
 
       - name: 📤 Upload tarball as artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: chillicream-nitro-github-actions-${{ env.GIT_TAG }}.tgz
           path: chillicream-nitro-github-actions-${{ env.GIT_TAG }}.tgz
