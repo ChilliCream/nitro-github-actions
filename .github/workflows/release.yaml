@@ -25,15 +25,17 @@ jobs:
         with:
           node-version: 22
           scope: "@chillicream"
+          cache: yarn
+          cache-dependency-path: yarn.lock
 
       - name: 🏷 Get the version from tag
         run: echo "GIT_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
-      - name: 📥 Install npm@11.9.0
-        run: npm install -g npm@11.9.0
+      - name: 🧰 Enable Corepack
+        run: corepack enable
 
       - name: 🔍 Install dependencies
-        run: npm ci
+        run: yarn install --immutable
 
       - name: 🏷️ Set version
         run: npm version $GIT_TAG
