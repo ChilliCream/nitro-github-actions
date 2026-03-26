@@ -97,8 +97,8 @@ export function getSourceMetadata(jobId?: string) {
     actor: context.actor,
     commitHash: context.sha,
     workflowName: context.workflow,
-    runNumber: context.runNumber,
-    runId: context.runId,
+    runNumber: context.runNumber.toString(),
+    runId: context.runId.toString(),
     jobId,
     repositoryUrl,
   };
