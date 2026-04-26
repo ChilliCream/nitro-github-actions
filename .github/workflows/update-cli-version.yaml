@@ -1,0 +1,95 @@
+name: 🔄 Update Nitro CLI Version (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Version to update to
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: 🔢 Parse version
+        id: ver
+        shell: bash
+        run: |
+          V="${{ inputs.version }}"
+          if [[ "$V" =~ ^([0-9]+)\.[0-9]+\.[0-9]+$ ]]; then
+            echo "is_stable=true" >> "$GITHUB_OUTPUT"
+            echo "major=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_stable=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 🧰 Enable Corepack
+        run: |
+          corepack enable
+          corepack prepare yarn@4.2.2 --activate
+          yarn --version
+
+      - name: 🧰 Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: 📦 Install dependencies
+        run: yarn install --immutable
+
+      - name: 📝 Update version in package.json
+        run: npm version "${{ inputs.version }}" --no-git-tag-version
+
+      - name: 🏗️ Build
+        run: yarn build
+
+      - name: 📤 Commit (verified)
+        id: commit
+        uses: ChilliCream/create-signed-commit@75b38ccd01b93548dd2fa458e533b62015ecf35c
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          commit_message: "Update Nitro CLI to ${{ inputs.version }}"
+
+      - name: 🏷️ Tag full version
+        uses: ChilliCream/create-signed-tag@28005302dd79bafbecdb0ad7c1daf2de2b795a39
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: v${{ inputs.version }}
+          sha: ${{ steps.commit.outputs.sha || github.sha }}
+
+      - name: 🏷️ Tag major version
+        if: steps.ver.outputs.is_stable == 'true'
+        uses: ChilliCream/create-signed-tag@28005302dd79bafbecdb0ad7c1daf2de2b795a39
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: v${{ steps.ver.outputs.major }}
+          sha: ${{ steps.commit.outputs.sha || github.sha }}
+
+      - name: 🚀 Create GitHub release
+        if: steps.ver.outputs.is_stable == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          TAG="v${{ inputs.version }}"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists. Skipping creation."
+            exit 0
+          fi
+
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --verify-tag
