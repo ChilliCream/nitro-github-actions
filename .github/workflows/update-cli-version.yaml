@@ -111,7 +111,17 @@ jobs:
         run: yarn install --immutable
 
       - name: 📝 Update version in package.json
-        run: npm version "${{ inputs.version }}" --no-git-tag-version
+        shell: bash
+        env:
+          NEW_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          CURRENT=$(node -p "require('./package.json').version")
+          if [[ "$CURRENT" == "$NEW_VERSION" ]]; then
+            echo "package.json already at ${NEW_VERSION}. Skipping."
+            exit 0
+          fi
+          npm version "$NEW_VERSION" --no-git-tag-version
 
       - name: 📝 Update README band
         shell: bash
@@ -130,8 +140,21 @@ jobs:
       - name: 🏗️ Build
         run: yarn build
 
+      - name: 🔎 Detect changes
+        id: diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "No working-tree changes. Skipping commit."
+          fi
+
       - name: 📤 Commit (verified)
         id: commit
+        if: steps.diff.outputs.has_changes == 'true'
         uses: ChilliCream/create-signed-commit@75b38ccd01b93548dd2fa458e533b62015ecf35c
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -158,7 +181,7 @@ jobs:
           fi
 
       - name: 🏷️ Tag full version
-        uses: ChilliCream/create-signed-tag@28005302dd79bafbecdb0ad7c1daf2de2b795a39
+        uses: ChilliCream/create-signed-tag@24bafb9fd5822a93e780cc9da658f79a78392862
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tag: v${{ inputs.version }}
@@ -166,7 +189,7 @@ jobs:
 
       - name: 🏷️ Tag major version
         if: inputs.is_stable
-        uses: ChilliCream/create-signed-tag@28005302dd79bafbecdb0ad7c1daf2de2b795a39
+        uses: ChilliCream/create-signed-tag@24bafb9fd5822a93e780cc9da658f79a78392862
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tag: v${{ steps.ctx.outputs.major }}
