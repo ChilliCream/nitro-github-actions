@@ -101,14 +101,31 @@ export function getSourceMetadata(jobId?: string) {
 
   const repositoryUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}`;
 
+  let commitHash: string = context.sha;
+  let ref: string | undefined = context.ref || undefined;
+  let pullRequestNumber: number | undefined;
+
+  const pullRequest = context.payload.pull_request;
+
+  if (pullRequest) {
+    // In pull request workflows context.sha and context.ref point to the
+    // synthetic merge commit (refs/pull/<number>/merge), so the head of the
+    // source branch is reported instead.
+    commitHash = pullRequest.head.sha;
+    ref = `refs/heads/${pullRequest.head.ref}`;
+    pullRequestNumber = pullRequest.number;
+  }
+
   return {
     actor: context.actor,
-    commitHash: context.sha,
+    commitHash,
     workflowName: context.workflow,
     runNumber: context.runNumber.toString(),
     runId: context.runId.toString(),
     jobId,
     repositoryUrl,
+    ref,
+    pullRequestNumber,
   };
 }
 
